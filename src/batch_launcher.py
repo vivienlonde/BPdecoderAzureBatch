@@ -217,7 +217,7 @@ def create_pool(batch_service_client, pool_id):
         vm_size=config._POOL_VM_SIZE,
         target_dedicated_nodes=config._POOL_NODE_COUNT,
         start_task=batchmodels.StartTask(
-            command_line="/bin/bash -c \"sudo apt-get update && sudo apt-get install -y python3-pip && pip3 install numpy\"",
+            command_line="/bin/bash -c \"apt-get update && apt-get install -y python3-pip && pip3 install numpy\"",
             wait_for_success=True,
             user_identity=batchmodels.UserIdentity(
                 auto_user=batchmodels.AutoUserSpecification(
