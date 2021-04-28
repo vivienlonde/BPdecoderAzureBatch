@@ -85,13 +85,45 @@ def upload_file_to_container(block_blob_client, container_name, file_path):
     tasks.
     """
     blob_name = os.path.basename(file_path)
+    # print('blob_name:', blob_name)
 
-    print('Uploading file {} to container [{}]...'.format(file_path,
+    print('Uploading file {} to container [{}]...'.format(blob_name,
                                                           container_name))
 
     block_blob_client.create_blob_from_path(container_name,
                                             blob_name,
                                             file_path)
+
+    sas_token = block_blob_client.generate_blob_shared_access_signature(
+        container_name,
+        blob_name,
+        permission=azureblob.BlobPermissions.READ,
+        expiry=datetime.datetime.utcnow() + datetime.timedelta(hours=2))
+
+    sas_url = block_blob_client.make_blob_url(container_name,
+                                              blob_name,
+                                              sas_token=sas_token)
+
+    return batchmodels.ResourceFile(http_url=sas_url, file_path=blob_name)
+
+
+def get_file_from_container(block_blob_client, container_name, file_path):
+    """
+    Gets a file from an Azure Blob storage container.
+
+    :param block_blob_client: A blob service client.
+    :type block_blob_client: `azure.storage.blob.BlockBlobService`
+    :param str container_name: The name of the Azure Blob storage container.
+    :param str file_path: The local path to the file.
+    :rtype: `azure.batch.models.ResourceFile`
+    :return: A ResourceFile initialized with a SAS URL appropriate for Batch
+    tasks.
+    """
+    blob_name = os.path.basename(file_path)
+    # print('blob_name:', blob_name)
+
+    print('Getting file {} from container [{}]...'.format(blob_name,
+                                                          container_name))
 
     sas_token = block_blob_client.generate_blob_shared_access_signature(
         container_name,
@@ -145,7 +177,8 @@ def get_container_sas_url(block_blob_client,
     """
     # Obtain the SAS token for the container.
     sas_token = get_container_sas_token(block_blob_client,
-                                        container_name, azureblob.BlobPermissions.WRITE)
+                                        container_name, 
+                                        blob_permissions)
 
     # Construct SAS URL for the container
     container_sas_url = "https://{}.blob.core.windows.net/{}?{}".format(
@@ -237,7 +270,7 @@ def add_tasks(batch_service_client, job_id, nb_tasks):
         tasks.append(batch.models.TaskAddParameter(
             id='Task{}'.format(idx),
             command_line=command,
-            resource_files=[input_file, python_file],
+            resource_files=resource_files,
             output_files=[output_file]
         )
         )
@@ -287,7 +320,7 @@ def print_task_output(batch_service_client, job_id, encoding=None):
     :param str job_id: The id of the job with task output files to print.
     """
 
-    print('Printing task output...')
+    print('Printing task output... \n')
 
     tasks = batch_service_client.task.list(job_id)
 
@@ -341,28 +374,55 @@ if __name__ == '__main__':
         account_name=config._STORAGE_ACCOUNT_NAME,
         account_key=config._STORAGE_ACCOUNT_KEY)
 
-    # Use the blob client to create the input and output containers in Azure Storage if they
-    # don't yet exist.
+    # Read access to the blobs of the inputdata container
 
+    inputdata_container_name = 'inputdata'
+    
+    # # Upload the inputdata files.
+    inputdata_file_paths = [os.path.join(sys.path[0], 'input_data\Hx_as_columns_3600.npy'),
+                        os.path.join(sys.path[0], 'input_data\Hx_as_rows_3600.npy'),
+                        os.path.join(sys.path[0], 'input_data\X_logicals_3600.npy')]
+    # print('inputdata_file_paths:', inputdata_file_paths)
+    
+    # # To upload the inputdata the first time
+    # inputdata_files = [upload_file_to_container(blob_client, inputdata_container_name, inputdata_file_path)
+    #                for inputdata_file_path in inputdata_file_paths]
+    
+    # To get the inputdata that already is in the inputdata container.
+    inputdata_files = [get_file_from_container(blob_client, inputdata_container_name, inputdata_file_path)
+                       for inputdata_file_path in inputdata_file_paths] 
+    print()
+    
+    
+    # Upload the python file to the input container
     input_container_name = 'input'
-    output_container_name = 'output'
     blob_client.create_container(input_container_name, fail_on_exist=False)
-    blob_client.create_container(output_container_name, fail_on_exist=False)
     print('Container [{}] created.'.format(input_container_name))
+    
+    input_file_paths = [os.path.join(sys.path[0], 'read_and_write.py')]
+    # print('input_file_paths:', input_file_paths)
+    
+    input_files = [upload_file_to_container(blob_client, input_container_name, input_file_path)
+                   for input_file_path in input_file_paths]
+    # print('input_files:', input_files)
+    print()
+    
+    # Resource files are the union of inputdata files and input files
+    resource_files = inputdata_files + input_files
+    
+    # Write access to the output container
+    
+    output_container_name = 'output'
+    blob_client.create_container(output_container_name, fail_on_exist=False)
     print('Container [{}] created.'.format(output_container_name))
     
-    # Upload the necessary files.
-    input_file_path = os.path.join(sys.path[0], 'bla.txt')
-    input_file = upload_file_to_container(blob_client, input_container_name, input_file_path)
-        
-    python_file_path = os.path.join(sys.path[0], 'read_and_write.py')
-    python_file = upload_file_to_container(blob_client, input_container_name, python_file_path)
-
-    # Declare the output file
     output_container_sas_url = get_container_sas_url(
         blob_client,
         output_container_name,
-        azureblob.BlobPermissions.WRITE)  
+        azureblob.BlobPermissions.WRITE)
+    # print('output_container_sas_url:', output_container_sas_url)
+    print()
+    
 
     # Create a Batch service client. We'll now be interacting with the Batch
     # service in addition to Storage
@@ -401,8 +461,8 @@ if __name__ == '__main__':
         raise
 
     # Clean up storage resources
-    # print('Deleting container [{}]...'.format(input_container_name))
-    # blob_client.delete_container(input_container_name)
+    print('Deleting container [{}]...'.format(input_container_name))
+    blob_client.delete_container(input_container_name)
 
     # Print out some timing info
     end_time = datetime.datetime.now().replace(microsecond=0)
