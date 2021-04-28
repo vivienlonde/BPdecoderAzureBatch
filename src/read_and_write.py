@@ -1,9 +1,9 @@
-# import sys
-# import numpy as np 
+import sys
+import numpy as np 
 # import math
 # import os
 
-import sys
+# import sys
 
 print(sys.version)
 
@@ -11,6 +11,6 @@ print(sys.version)
 #     data = file_object.read()
 #     print(data)
 
-i = sys.argv[1]
-with open('output_{}.txt'.format(i), "w") as file_object:
-    file_object.writelines(["bli \n", "bli \n"])
+# i = sys.argv[1]
+# with open('output_{}.txt'.format(i), "w") as file_object:
+#     file_object.writelines(["bli \n", "bli \n"])

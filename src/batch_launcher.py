@@ -215,7 +215,15 @@ def create_pool(batch_service_client, pool_id):
             ),
             node_agent_sku_id="batch.node.ubuntu 18.04"),
         vm_size=config._POOL_VM_SIZE,
-        target_dedicated_nodes=config._POOL_NODE_COUNT
+        target_dedicated_nodes=config._POOL_NODE_COUNT,
+        start_task=batchmodels.StartTask(
+            command_line="/bin/bash -c \"sudo apt-get update && sudo apt-get install -y python3-pip && pip3 install numpy\"",
+            wait_for_success=True,
+            user_identity=batchmodels.UserIdentity(
+                auto_user=batchmodels.AutoUserSpecification(
+                    scope=batchmodels.AutoUserScope.pool,
+                    elevation_level=batchmodels.ElevationLevel.admin)),
+    )
     )
     batch_service_client.pool.add(new_pool)
 
@@ -436,7 +444,7 @@ if __name__ == '__main__':
     try:
         # Create the pool that will contain the compute nodes that will execute the
         # tasks.
-        # create_pool(batch_client, config._POOL_ID)
+        create_pool(batch_client, config._POOL_ID)
 
         # Create the job that will run the tasks.
         create_job(batch_client, config._JOB_ID, config._POOL_ID)
