@@ -452,7 +452,7 @@ if __name__ == '__main__':
         create_job(batch_client, config._JOB_ID, config._POOL_ID)
 
         # Add the tasks to the job.
-        nb_tasks = 10
+        nb_tasks = 2
         add_tasks(batch_client, config._JOB_ID, nb_tasks)
 
         # Pause execution until tasks reach Completed state.
