@@ -18,6 +18,7 @@ import azure.batch.models as batchmodels
 sys.path.append('.')
 sys.path.append('..')
 
+import BP_config
 
 # Update the Batch and Storage account credential strings in config.py with values
 # unique to your accounts. These are used when constructing connection strings
@@ -263,9 +264,9 @@ def add_tasks(batch_service_client, job_id, nb_tasks):
 
     tasks = list()
 
-    for idx in range(3):
+    for idx in range(nb_tasks):
         
-        output_file_path = 'output_{}.txt'.format(idx)
+        output_file_path = BP_config._OUTPUT_BASE_NAME + '{}.npy'.format(idx)
         output_file = batchmodels.OutputFile(
                     file_pattern=output_file_path,
                     destination=batchmodels.OutputFileDestination(
@@ -274,7 +275,7 @@ def add_tasks(batch_service_client, job_id, nb_tasks):
                     upload_options=batchmodels.OutputFileUploadOptions(
                         upload_condition=batchmodels.OutputFileUploadCondition.task_success))
 
-        command = "/bin/bash -c \"python3 read_and_write.py {}\"".format(idx)
+        command = "/bin/bash -c \"python3 BP_decoder_10_rounds.py {}\"".format(idx)
         tasks.append(batch.models.TaskAddParameter(
             id='Task{}'.format(idx),
             command_line=command,
@@ -407,7 +408,8 @@ if __name__ == '__main__':
     blob_client.create_container(input_container_name, fail_on_exist=False)
     print('Container [{}] created.'.format(input_container_name))
     
-    input_file_paths = [os.path.join(sys.path[0], 'read_and_write.py')]
+    input_file_paths = [os.path.join(sys.path[0], 'BP_config.py'),
+                        os.path.join(sys.path[0], config._SCRIPT_NAME)]
     # print('input_file_paths:', input_file_paths)
     
     input_files = [upload_file_to_container(blob_client, input_container_name, input_file_path)
@@ -444,13 +446,13 @@ if __name__ == '__main__':
     try:
         # Create the pool that will contain the compute nodes that will execute the
         # tasks.
-        create_pool(batch_client, config._POOL_ID)
+        # create_pool(batch_client, config._POOL_ID)
 
         # Create the job that will run the tasks.
         create_job(batch_client, config._JOB_ID, config._POOL_ID)
 
         # Add the tasks to the job.
-        nb_tasks = 3
+        nb_tasks = 10
         add_tasks(batch_client, config._JOB_ID, nb_tasks)
 
         # Pause execution until tasks reach Completed state.

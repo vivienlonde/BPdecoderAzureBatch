@@ -1,18 +1,21 @@
 import sys
 import numpy as np 
 import math
-import os
+import BP_config
 
-from load_utilities import input_path, output_path, nb_qubits
+nb_trials = 10
+print('nb_trials:', nb_trials, '\n')
 
+nb_qubits = 3600
 print('nb of qubits :', nb_qubits)
 
-Hx_as_rows = np.load(input_path + 'Hx_as_rows_' + str(nb_qubits) + '.npy')
-Hx_as_columns = np.load(input_path + 'Hx_as_columns_' + str(nb_qubits) + '.npy')
-logicals_basis = np.load(input_path + 'X_logicals_' + str(nb_qubits) + '.npy')
+Hx_as_rows = np.load('Hx_as_rows_' + str(nb_qubits) + '.npy')
+Hx_as_columns = np.load('Hx_as_columns_' + str(nb_qubits) + '.npy')
+logicals_basis = np.load('X_logicals_' + str(nb_qubits) + '.npy')
 
 nb_qubits = len(Hx_as_columns)
 nb_checks = len(Hx_as_rows)
+# print('nb_checks:', nb_checks)
 
 qubit_to_check_degree = len(Hx_as_columns[0])
 check_to_qubit_degree = len(Hx_as_rows[0])
@@ -167,7 +170,7 @@ def is_in_the_image(residual_error,logicals_basis):
             return 1
 
 
-def noisy_decoder(error,physical_error_rate,T):
+def noisy_decoder(error,physical_error_rate,T=1):
 
         # print('T=',T) 
 
@@ -199,19 +202,12 @@ def noisy_decoder(error,physical_error_rate,T):
         else: print('wrong value for T')
 
 
-# def frange(start, stop, step):
-#     i = start
-#     while i < stop:
-#         yield i
-#         i += step
+def frange(start, stop, step):
+    i = start
+    while i < stop:
+        yield i
+        i += step
 
-batch_num = 0 # sys.argv[1]
-# print('batch_num:', batch_num)
-T = 1 
-# print('T:', T)
-
-f = 1000
-print('f :', f)
 
 # physical_error_rate = 1.5*10**(-1)
 # physical_error_rate = 7*10**(-2)
@@ -229,42 +225,36 @@ print('f :', f)
 # physical_error_rate = 1*10**(-1)
 # physical_error_rate = 5*10**(-2)
 # physical_error_rate = 2*10**(-2)
-# physical_error_rate = 1*10**(-2)
+physical_error_rate = 1*10**(-2)
 # physical_error_rate = 5*10**(-3)
 # physical_error_rate = 2*10**(-3)
-physical_error_rate = 1*10**(-3)
+# physical_error_rate = 1*10**(-3)
 # physical_error_rate = 5*10**(-4)
 # physical_error_rate = 2*10**(-4)
 # physical_error_rate = 10**(-4)
 
 print('physical_error_rate : ', physical_error_rate)
-nb_trials = int(f/physical_error_rate + 0.0001)
-print('nb_trials:', nb_trials, '\n')
 nb_successful_decoding = 0
 nb_logical_error = 0
 nb_decoding_did_not_terminate = 0
 for trial in range(nb_trials):
         # print('trial nb:',trial)
         initial_error = np.array([0 for qubit in range(nb_qubits)])
-        decoding_result = noisy_decoder(initial_error,physical_error_rate,T)
-        # if decoding_result=='successful decoding': nb_successful_decoding += 1
+        decoding_result = noisy_decoder(initial_error,physical_error_rate)
         if decoding_result=='logical error': nb_logical_error += 1
         if decoding_result=='decoding did not terminate': nb_decoding_did_not_terminate += 1
-        if trial%(int(nb_trials/100))==0 : print(int(100*trial/nb_trials + 0.0001), '/ 100')
+        # if trial%(int(nb_trials/100))==0 : print(int(100*trial/nb_trials + 0.0001), '/ 100')
 
-output_file = output_path + 'performances_10_rounds.npy'
-if os.path.isfile(output_file):
-        results = list(np.load(output_file))
-else:
-        results = []
+idx = sys.argv[1]
+# print('idx:', idx)
+output_file = config._OUTPUT_BASE_NAME + '{}.npy'.format(idx)
 nb_failed_decoding = nb_logical_error + nb_decoding_did_not_terminate
-new_result = [physical_error_rate, nb_trials, nb_logical_error, nb_decoding_did_not_terminate, nb_failed_decoding]
-results.append(new_result)
+result = [physical_error_rate, nb_trials, nb_logical_error, nb_decoding_did_not_terminate, nb_failed_decoding]
+np.save(output_file, result)
 
-print('f =', f)
 print('physical_error_rate : ', physical_error_rate)
 print('nb_failed_decoding =', nb_failed_decoding)
-np.save(output_file, results)
+
 
 
 

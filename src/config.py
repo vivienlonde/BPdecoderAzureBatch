@@ -25,3 +25,5 @@ _POOL_NODE_COUNT = 2  # Pool node count
 _POOL_VM_SIZE = 'Standard_D2_v3'  # VM Type/Size
 _JOB_ID = 'TestJob'  # Job ID
 _STANDARD_OUT_FILE_NAME = 'stdout.txt'  # Standard Output file
+
+_SCRIPT_NAME = 'BP_decoder_10_rounds.py'
