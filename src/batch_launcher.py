@@ -4,7 +4,6 @@ import io
 import os
 import sys
 import time
-import config
 try:
     input = raw_input
 except NameError:
@@ -18,9 +17,10 @@ import azure.batch.models as batchmodels
 sys.path.append('.')
 sys.path.append('..')
 
+import batch_config
 import BP_config
 
-# Update the Batch and Storage account credential strings in config.py with values
+# Update the Batch and Storage account credential strings in batch_config.py with values
 # unique to your accounts. These are used when constructing connection strings
 # for the Batch and Storage client objects.
 
@@ -183,7 +183,7 @@ def get_container_sas_url(block_blob_client,
 
     # Construct SAS URL for the container
     container_sas_url = "https://{}.blob.core.windows.net/{}?{}".format(
-        config._STORAGE_ACCOUNT_NAME, container_name, sas_token)
+        batch_config._STORAGE_ACCOUNT_NAME, container_name, sas_token)
 
     return container_sas_url
 
@@ -216,7 +216,7 @@ def create_pool(batch_service_client, pool_id):
             ),
             node_agent_sku_id="batch.node.ubuntu 18.04"),
         vm_size=config._POOL_VM_SIZE,
-        target_dedicated_nodes=config._POOL_NODE_COUNT,
+        target_dedicated_nodes=batch_config._POOL_NODE_COUNT,
         start_task=batchmodels.StartTask(
             command_line="/bin/bash -c \"apt-get update && apt-get install -y python3-pip && pip3 install numpy\"",
             wait_for_success=True,
@@ -266,7 +266,7 @@ def add_tasks(batch_service_client, job_id, nb_tasks):
 
     for idx in range(nb_tasks):
         
-        output_file_path = BP_config._OUTPUT_BASE_NAME + '{}.npy'.format(idx)
+        output_file_path = BP_config._OUTPUT_BASE_NAME + '{}.txt'.format(idx)
         output_file = batchmodels.OutputFile(
                     file_pattern=output_file_path,
                     destination=batchmodels.OutputFileDestination(
@@ -341,7 +341,7 @@ def print_task_output(batch_service_client, job_id, encoding=None):
         print("Node: {}".format(node_id))
 
         stream = batch_service_client.file.get_from_task(
-            job_id, task.id, config._STANDARD_OUT_FILE_NAME)
+            job_id, task.id, batch_config._STANDARD_OUT_FILE_NAME)
 
         file_text = _read_stream_as_string(
             stream,
@@ -380,8 +380,8 @@ if __name__ == '__main__':
     # blob storage containers and uploading files to containers.
 
     blob_client = azureblob.BlockBlobService(
-        account_name=config._STORAGE_ACCOUNT_NAME,
-        account_key=config._STORAGE_ACCOUNT_KEY)
+        account_name=batch_config._STORAGE_ACCOUNT_NAME,
+        account_key=batch_config._STORAGE_ACCOUNT_KEY)
 
     # Read access to the blobs of the inputdata container
 
@@ -409,7 +409,7 @@ if __name__ == '__main__':
     print('Container [{}] created.'.format(input_container_name))
     
     input_file_paths = [os.path.join(sys.path[0], 'BP_config.py'),
-                        os.path.join(sys.path[0], config._SCRIPT_NAME)]
+                        os.path.join(sys.path[0], batch_config._SCRIPT_NAME)]
     # print('input_file_paths:', input_file_paths)
     
     input_files = [upload_file_to_container(blob_client, input_container_name, input_file_path)
@@ -436,35 +436,35 @@ if __name__ == '__main__':
 
     # Create a Batch service client. We'll now be interacting with the Batch
     # service in addition to Storage
-    credentials = batch_auth.SharedKeyCredentials(config._BATCH_ACCOUNT_NAME,
-                                                  config._BATCH_ACCOUNT_KEY)
+    credentials = batch_auth.SharedKeyCredentials(batch_config._BATCH_ACCOUNT_NAME,
+                                                  batch_config._BATCH_ACCOUNT_KEY)
 
     batch_client = batch.BatchServiceClient(
         credentials,
-        batch_url=config._BATCH_ACCOUNT_URL)
+        batch_url=batch_config._BATCH_ACCOUNT_URL)
 
     try:
         # Create the pool that will contain the compute nodes that will execute the
         # tasks.
-        # create_pool(batch_client, config._POOL_ID)
+        # create_pool(batch_client, batch_config._POOL_ID)
 
         # Create the job that will run the tasks.
-        create_job(batch_client, config._JOB_ID, config._POOL_ID)
+        create_job(batch_client, batch_config._JOB_ID, batch_config._POOL_ID)
 
         # Add the tasks to the job.
         nb_tasks = 2
-        add_tasks(batch_client, config._JOB_ID, nb_tasks)
+        add_tasks(batch_client, batch_config._JOB_ID, nb_tasks)
 
         # Pause execution until tasks reach Completed state.
         wait_for_tasks_to_complete(batch_client,
-                                   config._JOB_ID,
+                                   batch_config._JOB_ID,
                                    datetime.timedelta(minutes=30))
 
-        print("  Success! All tasks reached the 'Completed' state within the "
+        print("All tasks reached the 'Completed' state within the "
               "specified timeout period.")
 
         # Print the stdout.txt and stderr.txt files for each task to the console
-        print_task_output(batch_client, config._JOB_ID)
+        print_task_output(batch_client, batch_config._JOB_ID)
 
     except batchmodels.BatchErrorException as err:
         print_batch_exception(err)
@@ -482,11 +482,13 @@ if __name__ == '__main__':
     print()
 
     # Clean up Batch resources (if the user so chooses).
-    if query_yes_no('Delete job?') == 'yes':
-        batch_client.job.delete(config._JOB_ID)
+    # if query_yes_no('Delete job?') == 'yes':
+    #     batch_client.job.delete(batch_config._JOB_ID)
+    batch_client.job.delete(batch_config._JOB_ID)
+    print('Deleting job ...')
 
-    if query_yes_no('Delete pool?') == 'yes':
-        batch_client.pool.delete(config._POOL_ID)
+    # if query_yes_no('Delete pool?') == 'yes':
+    #     batch_client.pool.delete(batch_config._POOL_ID)
 
     print()
-    input('Press ENTER to exit...')
+    # input('Press ENTER to exit...')

@@ -4,7 +4,7 @@ import math
 import BP_config
 
 nb_trials = 1
-print('nb_trials:', nb_trials, '\n')
+print('nb_trials:', nb_trials)
 
 nb_qubits = 3600
 print('nb of qubits :', nb_qubits)
@@ -250,14 +250,12 @@ idx = sys.argv[1]
 output_file = BP_config._OUTPUT_BASE_NAME + '{}.txt'.format(idx)
 nb_failed_decoding = nb_logical_error + nb_decoding_did_not_terminate
 result = [physical_error_rate, nb_trials, nb_logical_error, nb_decoding_did_not_terminate, nb_failed_decoding]
-with open(output_file, "w") as file_object:
-    file_object.writelines(result)
-
-# np.save(output_file, result)
-
+with open(output_file, 'w') as f:
+        for x in result:
+                f.write(str(x) + '\n')
 
 
-print('physical_error_rate : ', physical_error_rate)
+# print('physical_error_rate : ', physical_error_rate)
 print('nb_failed_decoding =', nb_failed_decoding)
 
 
