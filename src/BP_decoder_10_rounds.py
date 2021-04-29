@@ -3,11 +3,13 @@ import numpy as np
 import math
 import BP_config
 
-nb_trials = 1
-print('nb_trials:', nb_trials)
+
+print('nb_trials:', BP_config._NB_TRIALS)
 
 nb_qubits = 3600
 print('nb of qubits :', nb_qubits)
+
+nb_BP_rounds = 10
 
 Hx_as_rows = np.load('Hx_as_rows_' + str(nb_qubits) + '.npy')
 Hx_as_columns = np.load('Hx_as_columns_' + str(nb_qubits) + '.npy')
@@ -20,7 +22,6 @@ nb_checks = len(Hx_as_rows)
 qubit_to_check_degree = len(Hx_as_columns[0])
 check_to_qubit_degree = len(Hx_as_rows[0])
 
-nb_BP_rounds = 10
 
 # physical_error_rate = 0.05
 # print('physical_error_rate: ', physical_error_rate,'\n')
@@ -237,19 +238,19 @@ print('physical_error_rate : ', physical_error_rate)
 nb_successful_decoding = 0
 nb_logical_error = 0
 nb_decoding_did_not_terminate = 0
-for trial in range(nb_trials):
+for trial in range(BP_config._NB_TRIALS):
         # print('trial nb:',trial)
         initial_error = np.array([0 for qubit in range(nb_qubits)])
         decoding_result = noisy_decoder(initial_error,physical_error_rate)
         if decoding_result=='logical error': nb_logical_error += 1
         if decoding_result=='decoding did not terminate': nb_decoding_did_not_terminate += 1
-        # if trial%(int(nb_trials/100))==0 : print(int(100*trial/nb_trials + 0.0001), '/ 100')
+        # if trial%(int(BP_config._NB_TRIALS/100))==0 : print(int(100*trial/BP_config._NB_TRIALS + 0.0001), '/ 100')
 
 idx = sys.argv[1]
 # print('idx:', idx)
 output_file = BP_config._OUTPUT_BASE_NAME + '{}.txt'.format(idx)
 nb_failed_decoding = nb_logical_error + nb_decoding_did_not_terminate
-result = [physical_error_rate, nb_trials, nb_logical_error, nb_decoding_did_not_terminate, nb_failed_decoding]
+result = [physical_error_rate, BP_config._NB_TRIALS, nb_logical_error, nb_decoding_did_not_terminate, nb_failed_decoding]
 with open(output_file, 'w') as f:
         for x in result:
                 f.write(str(x) + '\n')
