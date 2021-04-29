@@ -215,7 +215,7 @@ def create_pool(batch_service_client, pool_id):
                 version="latest"
             ),
             node_agent_sku_id="batch.node.ubuntu 18.04"),
-        vm_size=config._POOL_VM_SIZE,
+        vm_size=batch_config._POOL_VM_SIZE,
         target_dedicated_nodes=batch_config._POOL_NODE_COUNT,
         start_task=batchmodels.StartTask(
             command_line="/bin/bash -c \"apt-get update && apt-get install -y python3-pip && pip3 install numpy\"",
@@ -446,7 +446,7 @@ if __name__ == '__main__':
     try:
         # Create the pool that will contain the compute nodes that will execute the
         # tasks.
-        # create_pool(batch_client, batch_config._POOL_ID)
+        create_pool(batch_client, batch_config._POOL_ID)
 
         # Create the job that will run the tasks.
         create_job(batch_client, batch_config._JOB_ID, batch_config._POOL_ID)
@@ -457,7 +457,7 @@ if __name__ == '__main__':
         # Pause execution until tasks reach Completed state.
         wait_for_tasks_to_complete(batch_client,
                                    batch_config._JOB_ID,
-                                   datetime.timedelta(minutes=30))
+                                   datetime.timedelta(hours=100))
 
         print("All tasks reached the 'Completed' state within the "
               "specified timeout period.")
@@ -486,8 +486,8 @@ if __name__ == '__main__':
     batch_client.job.delete(batch_config._JOB_ID)
     print('Deleting job ...')
 
-    # if query_yes_no('Delete pool?') == 'yes':
-    #     batch_client.pool.delete(batch_config._POOL_ID)
+    if query_yes_no('Delete pool?') == 'yes':
+        batch_client.pool.delete(batch_config._POOL_ID)
 
     print()
     # input('Press ENTER to exit...')

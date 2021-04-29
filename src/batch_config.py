@@ -5,12 +5,12 @@ _BATCH_ACCOUNT_URL = 'https://myownbatchaccount.westeurope.batch.azure.com'  # Y
 _STORAGE_ACCOUNT_NAME = 'mystorageforbatch'  # Your storage account name
 _STORAGE_ACCOUNT_KEY = 'GrWmz7B2qt6ewPypzAVSe42DYgX7daySFEBsG+ORNHcAh+48pBwHhMks4vg21Oe66EGIsSog44zUWIf7v6ocaQ=='  # Your storage account key
 
-_POOL_ID = 'TestPool'  # Your Pool ID
-_POOL_NODE_COUNT = 2  # Pool node count
+_POOL_ID = 'BPdecoderPool'  # Your Pool ID
+_POOL_NODE_COUNT = 1000  # Pool node count
 _POOL_VM_SIZE = 'Standard_D2_v3'  # VM Type/Size
 
-_JOB_ID = 'TestJob'  # Job ID
+_JOB_ID = 'BPdecoderJob'  # Job ID
 _STANDARD_OUT_FILE_NAME = 'stdout.txt'  # Standard Output file
 
 _SCRIPT_NAME = 'BP_decoder_10_rounds.py'
-_NB_TASKS = 2
+_NB_TASKS = _POOL_NODE_COUNT
